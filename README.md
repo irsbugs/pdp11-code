@@ -62,7 +62,7 @@ d 1036 000000
 
 ## Interrupt Driven Routines.
 
-PDP11 code may be modified from using looping routines to test if devices are ready to send/receive data, to making interrupt driven routines.
+PDP11 code may be modified from using looping routines to test if devices are ready to send/receive data, to using *interrupt driven routines*.
 
 For these programs the starting address of 1000 has been selected. An initial piece of housekeeping on starting a program is to set the Stack Pointer (SP). The SP is General Purpose Register 6 and address 1000 is the address its initially been selected to contain. 
 ```
