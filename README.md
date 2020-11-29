@@ -1,8 +1,14 @@
 # pdp11-code
 
-The **simh** application provides simulation of DEC's PDP11 computers. 
+The **simh** application provides simulation of DEC's PDP11 computers.
 
-One way to move data from a register to, say, the console treminal display is to test the CSR at address 177564 to see if its ready to receive a character. Loop until it is, and when it is, then move the character to the Console buffer at address 177566. For example run the file:
+A PDP11 Programming card may be obtained from: echo PDP11 Programming card: https://archive.org/details/bitsavers_decpdp11PDul75_1582192/page/n1/mode/2up
+
+
+## Testing CSR Status and Looping
+
+One way to move data from a register to, say, the console terminal display is to test the CSR at address 177564 to see if its ready to receive a character. Loop until it is, and when it is, then move the character to the Console buffer at address 177566. For example run the file:
+
 * console-tstb-character
 
 The code in this file is:
@@ -18,7 +24,7 @@ d 1006 112737
 d 1010 000101
 d 1012 177566
 
-echo Do the same as above but move te number 102 octal. i.e. letter B.
+echo Do the same as above but move the number 102 octal. i.e. letter B.
 d 1014 105737
 d 1016 177564
 d 1020 100375
@@ -38,14 +44,14 @@ PDP-11 simulator V3.8-1
 TSTB Address of Console Display CSR 177564
 Branch if Plus. i.e. If no 000200 to indicated "ready".
 MOV #101 octal i.e. Upper case ASCII A to Console buffer 177566
-Do the same as above but move te number 102 octal. i.e. letter B.
+Do the same as above but move the number 102 octal. i.e. letter B.
 A
 HALT instruction, PC: 001032 (HALT)
 sim> 
 ```
-Note that the "B" is not displayed as the simulator performed the HALT in the code before it had got the "B" character out to the console. This timing issue may be overcome by adding delay before halting. E.g.
+Note that the "B" is not displayed as the simulator performed the HALT in the code before it had delivered the "B" character out to the console. This timing issue may be overcome by adding a delay before halting. E.g.
 ```
-echo add delay before halting
+echo Add delay before halting
 d 1030 105737
 d 1032 177564
 d 1034 100375
@@ -54,15 +60,16 @@ echo HALT
 d 1036 000000
 ```
 
-## Moving from Testing Loops to Interrupt driven routines.
+## Interrupt Driven Routines.
 
-Moving pdp11 code from using looping routines to test if devices are ready to send/receive data, to making interrupt driven routines.
+PDP11 code may be modified from using looping routines to test if devices are ready to send/receive data, to making interrupt driven routines.
 
-I start my programs at address 1000 (I recollect that was a convention) and the first thing they do is set the Stack Pointer (SP ~ which is General Purpose Register 6) to contain address 1000. E.g.
-
+For these programs the starting address of 1000 has been selected. An initial piece of housekeeping on starting a program is to set the Stack Pointer (SP). The SP is General Purpose Register 6 and address 1000 is the address its initially been selected to contain. 
+```
 MOV #1000, R6
 012706
 001000
+```
 
 The stack never uses address 1000. It works downwards, so the first entry on the stack will be 776, then 774, then 772, etc.
 
