@@ -2,7 +2,7 @@
 
 The **simh** application provides simulation of DEC's PDP11 computers.
 
-A PDP11 Programming card may be obtained from: echo PDP11 Programming card: https://archive.org/details/bitsavers_decpdp11PDul75_1582192/page/n1/mode/2up
+A PDP11 Programming card may be obtained from: https://archive.org/details/bitsavers_decpdp11PDul75_1582192/page/n1/mode/2up
 
 
 ## Testing CSR Status and Looping
