@@ -71,9 +71,14 @@ HALT instruction, PC: 001040 (HALT)
 
 ## Interrupt Driven Routines.
 
-PDP11 code may be modified from using looping routines to test if devices are ready to send/receive data, to using *interrupt driven routines*.
+PDP11 code may be modified from using looping routines to test if devices are ready to send/receive data, to using *interrupt driven routines*. To demonstrate this a program will wait for a key to be typed on the console keyboard. When it's typed the keyboard interrupt is triggered and then code is executed specifically to handle the input from the keyboard buffer.  
 
-For these programs the starting address of 1000 has been selected. An initial piece of housekeeping on starting a program is to set the Stack Pointer (SP). The SP is General Purpose Register 6 and address 1000 is the address its initially been selected to contain. 
+For these programs the starting address of 1000 has been selected. Thus program script files contain g for go and 1000 to start at address 1000
+```
+g 1000
+```
+
+An initial piece of housekeeping on starting a program is to set the Stack Pointer (SP). The SP is General Purpose Register 6 and address 1000 is the address it's initially been selected to contain. 
 ```
 MOV #1000, R6
 012706
@@ -82,7 +87,7 @@ MOV #1000, R6
 
 The stack never uses address 1000. It works downwards, so the first entry on the stack will be 776, then 774, then 772, etc.
 
-I then get my program to set the address and PSW to use for a routine to be executed when an interrupt occurs. For example addresses 60 and 62 are used for the keyboard of the console terminal. Into 60 I put the address of 2000, when my keyboard input routine starts. Into 62 I put the PSW I want the keyboard routine to use. I enter 200 so that it has a priority of 4.
+The program needs to set the address and PSW to use for a routine to be executed when an interrupt occurs. For example addresses 60 and 62 are used for the keyboard of the console terminal. Into 60 I put the address of 2000, when my keyboard input routine starts. Into 62 I put the PSW I want the keyboard routine to use. I enter 200 so that it has a priority of 4.
 
 MOV #2000 to Address 60
 012737
