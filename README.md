@@ -60,6 +60,15 @@ echo HALT
 d 1036 000000
 ```
 
+The console now displays...
+```
+Do the same as above but move the number 102 octal. i.e. letter B.
+Add delay before halting
+HALT
+AB
+HALT instruction, PC: 001040 (HALT)
+```
+
 ## Interrupt Driven Routines.
 
 PDP11 code may be modified from using looping routines to test if devices are ready to send/receive data, to using *interrupt driven routines*.
