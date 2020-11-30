@@ -288,7 +288,7 @@ echo RTI to return to address 1036, which branchs back one instruction for the W
 d 2042 000002
 
 echo HALT for Ctrl Q
-d 2044 
+d 2044 000000
 ```
 To perform the above:
 ```
