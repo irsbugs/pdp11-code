@@ -311,7 +311,7 @@ echo d 1036 000000
 echo Change HALT for a Branch back one instruction to the WAIT. To continue looping.
 d 1036 000776
 
-echo Test for Control Q exit. CMPB 21 (Ctrl Q) with R0. Branch to HALT
+echo Test for Control q exit. CMPB 21 (Ctrl q) with R0. Branch to HALT
 d 2022 122700
 d 2024 000021
 d 2026 001406
@@ -326,13 +326,13 @@ d 2040 177566
 echo RTI to return to address 1036, which branchs back one instruction for the WAIT.
 d 2042 000002
 
-echo HALT for Ctrl Q
+echo HALT for Ctrl q
 d 2044 000000
 ```
 To perform the above:
 ```
 $ rlwrap pdp11 interrupt-overview-keyboard-with-echo
 ```
-...to exit from this program type Control Q.
+...to exit from this program type Control q.
  
  
