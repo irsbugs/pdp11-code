@@ -153,16 +153,23 @@ MOV stack address 776 and 774 to R1 and R2 for having a look later
 013702
 000774
 
+Lets see what the SP and PSW are set to: MOV R6 to R3 and MOV 177776 to R4
+010603
+013704
+177776
+
 Finished. So, Return from interrupt (RTI)
 
 RTI
 000002
 ```
 
-When the RTI occurs the Stack will be read and the address of the WAIT for interrupt plus 2, will be retrieved and fed to the Program counter, along with the stack providiing the PSW to change back to priority 3.
+When the RTI occurs the Stack will be read and the address of the WAIT for interrupt plus 2, will be retrieved and fed to the Program counter, along with the stack providing the PSW to change back to priority 3.
 
-The stack will now contain the address of the RTI + 2 and the PSW with a priority of 4.
+The stack will continue to contain the address of the RTI + 2 and the PSW with a priority of 4, however the Stack Pointer will move back to 1000.
 
+The code total code is as follows:
+```
 echo MOV #1000 to the Stack Pointer.
 d 1000 012706
 d 1002 001000 
@@ -214,15 +221,16 @@ d 2022 000002
 
 echo Start at address 1000
 g 1000
+```
 
-Start at address 1000
-Keyboard interrupt routine. Once a key has been typed
+The program is now run, starting at address 1000. Once a key has been typed
 
 ... A Capital A was typed...
 
 HALT instruction, PC: 001040 (HALT)
 
 Now take a look around...
+```
 sim> e R0
 R0:	000101 <-- This is the Capital "A" in R0 taken from 177562 keyboard buffer.
 sim> e r1
@@ -246,15 +254,15 @@ PSW:	000140
 sim> e PC
 PC:	001040 <-- Halted at the after the WAIT for interrupt.
 sim> 
-
-To perfrom the above run:
-
+```
+To perform the above run:
+```
 $ rlwrap pdp11 interrupt-overview-keyboard
-
+```
 To echo the keyboard keys typed, then (at this stage) it is done with a TSTB loop rather than an interrupt routine.
 
 The code above is enhanced as follows:
-
+```
 echo WAIT for interrupt.
 d 1034 000001
 
@@ -263,7 +271,6 @@ echo d 1036 000000
 
 echo Change HALT for a Branch back one instruction to the WAIT. To continue looping.
 d 1036 000776
-
 
 echo Test for Control Q exit. CMPB 21 (Ctrl Q) with R0. Branch to HALT
 d 2022 122700
@@ -282,11 +289,11 @@ d 2042 000002
 
 echo HALT for Ctrl Q
 d 2044 
-
+```
 To perform the above:
-
+```
 $ rlwrap pdp11 interrupt-overview-keyboard-with-echo
-
+```
 
  
  
