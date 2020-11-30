@@ -335,4 +335,18 @@ $ rlwrap pdp11 interrupt-overview-keyboard-with-echo
 ```
 ...to exit from this program type Control q.
  
+## Output a Message to the Console Display
+
+On the PDP11 the addresses for output to the console terminal display are 177546 for the CSR and 177566 for the Buffer. The interrupt vectors for the console output are 64 for the address of the output routine and 66 for the PSW to be used when commencing execution of the output routine.
+
+In the case of the keyboard interrupt, you control when this commences, as you are the person that types the first key on the keyboard that generates the first interrupt.
+
+In generating an interrupt for output to the console terminal display this is determined by the device. If the device is ready to output a character (i.e. a 200 is the value in its CSR of 177564) and you set Bit 6, the interrupt bit, by moving a 100 to the CSR. Then an interrupt will immediately occur before the next instruction can be executed and before your program has reached the WAIT for Interrupt instruction.
+
+This may be undesirable, as the program may not have reached a stage of having its data set up to send to the console display.
+
+One method to overcome this is to send a NULL character (000) to the console display when this first interrupt occurs. While this is being done, the program can continue executing code and set up transfer of the message via the WAIT for interrupt process.
+
+Please review and run the attached program:
+* interrupt-driven-console-out
  
