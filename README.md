@@ -4,7 +4,7 @@ The **simh** application provides simulation of DEC's PDP11 computers.
 
 A PDP11 Programming card may be obtained from: https://archive.org/details/bitsavers_decpdp11PDul75_1582192/page/n1/mode/2up
 
-The latest versions of *simh* may include (Readline)[https://en.wikipedia.org/wiki/GNU_Readline] If the version you have does not, then it is advantageous to download and invoke the *rlwrap* utility.
+The latest versions of *simh* may include Readline[https://en.wikipedia.org/wiki/GNU_Readline] If the version you have does not, then it is advantageous to download and invoke the *rlwrap* utility.
 
 ## Testing CSR Status and Looping
 
