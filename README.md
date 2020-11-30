@@ -348,7 +348,7 @@ This may be undesirable, as the program may not have reached a stage of having i
 One method to overcome this is to send a NULL character (000) to the console display when this first interrupt occurs. While this is being done, the program can continue executing code and set up transfer of the message via the WAIT for interrupt process.
 
 Please review and run the attached program:
-* interrupt-driven-console-out
+* interrupt-driven-console-output
  
 Objectives of this program are:
 
