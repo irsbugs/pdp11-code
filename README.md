@@ -333,6 +333,6 @@ To perform the above:
 ```
 $ rlwrap pdp11 interrupt-overview-keyboard-with-echo
 ```
-
+...to exit from this program type Control Q.
  
  
