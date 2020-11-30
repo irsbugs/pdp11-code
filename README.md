@@ -350,3 +350,19 @@ One method to overcome this is to send a NULL character (000) to the console dis
 Please review and run the attached program:
 * interrupt-driven-console-out
  
+Objectives of this program are:
+
+* The message is stored from loaction 4000 onwards. Each 16 bit word of the message contains two bytes and each byte is an ASCII character. 
+* The main program starts at address location 1000. 
+* After housekeeping procedures the number 4000, the start address of the message is moved to R0.
+* The contents of the R0 register is then used to get a byte of data from the address it points to, which it stores in R1. R0 then auto-increments by 1, so its pointing to the next byte of data.
+* Once an updated byte of data is placed in R1, the interrupt bit for the Console output CSR is turned on.
+* The program then executes a WAIT instruction and pauses until the console device comes "ready" and generates an interrupt.
+* The interrupt occurs and the routine commences execution at loacation 3000.
+* The first task is to turn off further interupts by the console, which is done by sending a 1 to the CSR. If this is not done, then the same character may repeatedly be output to the console.
+* The character in R1 is then moverd to the Console output buffer 177566 and is displayed.
+* A return from interrupt then occurs. 
+* The next character in the message is retrieved and after turning interrupts back on a WAIT is performed until the device it "ready" for the next character and performs an interupt.
+* Each time a check is performed on R1 to see if it contains zero. When it does the program HALTs as the message has been completely sent to the console display.
+
+ 
