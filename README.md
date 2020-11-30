@@ -4,10 +4,11 @@ The **simh** application provides simulation of DEC's PDP11 computers.
 
 A PDP11 Programming card may be obtained from: https://archive.org/details/bitsavers_decpdp11PDul75_1582192/page/n1/mode/2up
 
+The latest versions of *simh* may include (Readline)[https://en.wikipedia.org/wiki/GNU_Readline] If the version you have does not, then it is advantageous to download and invoke the *rlwrap* utility.
 
 ## Testing CSR Status and Looping
 
-One way to move data from a register to, say, the console terminal display is to test the CSR at address 177564 to see if its ready to receive a character. Loop until it is, and when it is, then move the character to the Console buffer at address 177566. For example run the file:
+One way to move data from a register to, say, the console terminal display is to test the CSR at address 177564 to see if the device ready to receive a character. Loop until it is, and when it is, then move the character to the console buffer at address 177566. For example run the file:
 
 * console-tstb-character
 
@@ -24,7 +25,7 @@ d 1006 112737
 d 1010 000101
 d 1012 177566
 
-echo Do the same as above but move the number 102 octal. i.e. letter B.
+echo Do the same as above but move the number 102 octal. i.e. The letter B.
 d 1014 105737
 d 1016 177564
 d 1020 100375
