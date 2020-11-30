@@ -8,7 +8,7 @@ The latest versions of *simh* may include [Readline](https://en.wikipedia.org/wi
 
 ## Testing CSR Status and Looping
 
-One way to move data from a register to, say, the console terminal display is to test the CSR at address 177564 to see if the device ready to receive a character. Loop until it is, and when it is, then move the character to the console buffer at address 177566. For example run the file:
+One way to move data from a register to, say, the console terminal display is to test the CSR at address 177564 to see if the device is ready to receive a character. Loop until it is, and then move the character to the console buffer at address 177566. For example run the file:
 
 * console-tstb-character
 
@@ -72,7 +72,7 @@ HALT instruction, PC: 001040 (HALT)
 
 ## Interrupt Driven Routines.
 
-PDP11 code may be modified from using looping routines to test if devices are ready to send/receive data, to using *interrupt driven routines*. To demonstrate this a program will wait for a key to be typed on the console keyboard. When it's typed the keyboard interrupt is triggered and then code is executed specifically to handle the input from the keyboard buffer.  
+PDP11 code may be enhanced from using looping routines to test if devices are ready to send/receive data, to using *interrupt driven routines*. To demonstrate this a program will wait for a key to be typed on the console keyboard. When it's typed the keyboard interrupt is triggered and then code is executed to immediately handle retrieving a character from the keyboard buffer.  
 
 For these programs the starting address of 1000 has been selected. Thus program script files contain g for go and 1000 to start at address 1000
 ```
@@ -88,8 +88,8 @@ MOV #1000, R6
 
 The stack never uses address 1000. It works downwards, so the first entry on the stack will be 776, then 774, then 772, etc.
 
-The program needs to set the address and PSW to use for a routine to be executed when an interrupt occurs. For example addresses 60 and 62 are used for the keyboard of the console terminal. Into 60 I put the address of 2000, when my keyboard input routine starts. Into 62 I put the PSW I want the keyboard routine to use. I enter 200 so that it has a priority of 4.
-
+The program needs to set the address and PSW to use for a routine to be executed when an interrupt occurs. For example addresses 60 and 62 are used for the keyboard of the console terminal. Into 60 is placed the address of 2000, where the keyboard input routine starts. Into 62 is placed the PSW that the keyboard routine will start execution at. In the case of the console keyboard, 200 is used so that it will set a priority of 4. Settings priority levels for the PSW is as follows: 7 = 340, 6 = 300, 5 = 240, 4 = 200, 3 = 140, 2 = 100, 1 = 40
+```
 MOV #2000 to Address 60
 012737
 002000
@@ -99,48 +99,49 @@ MOV #200 (priority 4) be the future PSW at Address 62
 012737
 000200
 000062
-
-Then next part of my program that started at address 1000 is to set the priority of my program in the PSW to be less that 4 so an interrupt from the keyboard is at a higher level and may occur. By default simh/pdp11 seems to start with the PSW at 340 which is priority 7.
-
+```
+Then next part of the program that started at address 1000 is to set the priority in the PSW to be less that 4 so an interrupt from the keyboard is at a higher level and may occur. By default simh/pdp11 seems to start with the PSW at 340 which is priority 7.
+```
 MOV # 140 (priority 3) to PSW address of 177776
 012737
 000140
 177776
-
+```
 Now the keyboards interrupt enabled bit 6 needs to be set.
+```
 Mov #100 to Keyboard CSR 177560
 012737
 000100
 177560
-
+```
 After this there needs to be a Wait for interrupt, where the program waits until someone types a key on the keyboard.
-
+```
 WAIT for interrupt
 000001
-
+```
 For the moment make the next instruction after the WAIT to be a HALT 000000.
-
+```
 d 2000 000000
+```
 
+Assuming address 2000 just contains a halt 000000 at the moment, then here is what happens when the code is run from address 1000.
+* Housekeeping is performed and everything is set as above
+* The program gets to the WAIT instruction and waits for a key on the console to be pressed. 
+* When the key is pressed the keyboard hardware interrupt occurs. 
+* The current PSW of 140 is placed on the stack at address 776.
+* The updated PC (after the WAIT instruction) is placed on the stack at address 774. 
+* The value of 2000 at interrupt vector address of 60 is loaded into the Program Counter (PC) 
+* The value of 200 (priority 4) at interrupt vector address of 62 is loaded in the PSW.
 
-Assuming address 2000 just contains a halt 000000 at the moment, then heres what happens when the code is run from address 1000.
-
-Everything is set as above and the program gets to the WAIT instruction and waits for a key to be pressed. When the key is pressed the keyboard interrupt occurs. The the Current PSW of 140 is placed on the stack at address 776 and the updated PC (after the WAIT instruction) is placed on the stack at address 774. 
-
-The value of 2000 at interrupt vector address of 60 is loaded into the Program Counter (PC) and the vaMov #100 to Keyboard CSR 177560
-012737
-000100
-177560lue of 200 (priority 4) at interrupt vector address of 62 is loaded in the PSW.
-
-The program then starts executing code at address 2000 and finds a HALT instruction. It halts and displays the updated PC of 2002. You can then examine things with commans like:
-
+The program then starts executing code at address 2000 and finds a HALT instruction. It halts and displays the updated PC of 2002. You can then examine the status of registers, etc. with commands like:
+```
 e PC
 e PSW
 e SP
 e 770:1000
-
+```
 Now write some code at address 2000 to capture some info and return from the interrupt. E.g.
-
+```
 MOV the contents of Keyboard buffer to Register 0
 013700
 177562
@@ -152,10 +153,11 @@ MOV stack address 776 and 774 to R1 and R2 for having a look later
 013702
 000774
 
-Now Return from interrupt (RTI)
+Finished. So, Return from interrupt (RTI)
 
 RTI
 000002
+```
 
 When the RTI occurs the Stack will be read and the address of the WAIT for interrupt plus 2, will be retrieved and fed to the Program counter, along with the stack providiing the PSW to change back to priority 3.
 
