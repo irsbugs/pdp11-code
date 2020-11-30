@@ -352,7 +352,7 @@ Please review and run the attached program:
  
 Objectives of this program are:
 
-* The message is stored from loaction 4000 onwards. Each 16 bit word of the message contains two bytes and each byte is an ASCII character. 
+* The message is stored from location 4000 onwards. Each 16 bit word of the message contains two bytes and each byte is an ASCII character. 
 * The main program starts at address location 1000. 
 * After housekeeping procedures the number 4000, the start address of the message is moved to R0.
 * The contents of the R0 register is then used to get a byte of data from the address it points to, which it stores in R1. R0 then auto-increments by 1, so its pointing to the next byte of data.
