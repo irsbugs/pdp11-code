@@ -1,0 +1,87 @@
+echo PDP11 Using Interupt vectors send a message to the console display.
+echo Setting CPU to 11/05...
+set cpu 11/05
+show cpu
+
+echo PSW Bits for priority 7 6 5. 4 Trace Trap. 3 Neg 2 Zero 1 oVer 0 Carry
+echo Priority 7 000340, 6 300, 5 240, 4 200, 3 140, 2 100, 1 40, 0 0 
+echo PSW is currently set to:
+e psw
+echo Set PSW, Address 177776, to priority 3
+d 1000 012737
+d 1002 000140
+d 1004 177776
+d 1006 240
+
+echo Set stack pointer, i.e. R6 177706 to 1000
+echo On interupt: 774 = PC, 776 = PSW
+d 1010 012706
+d 1012 001000
+
+echo Dummy data. Send a Null first. To go to output on first firing of interupt
+d 1014 112701
+d 1016 000000
+
+echo setup interupt for console output 64 Addr and 66 PSW = Priority 4
+d 1020 012737
+d 1022 003000
+d 1024 000064
+d 1026 240
+
+d 1030 012737
+d 1032 000200
+d 1034 000066
+d 1036 240
+
+echo Turn on interupt mode for Console output 100 to 177564. Fires immediately
+echo Need to send nothing on first firing.
+d 1040 012737
+d 1042 000100
+d 1044 177564
+d 1046 240
+
+
+echo Run the data to be output through R0
+d 1050 012700
+d 1052 004000
+echo movb @R0+ R1
+d 1054 112001
+echo BEQ zero Branch to halt if finished reading data
+d 1056 001406
+
+
+echo do it again but this time Wait
+d 1060 012737
+d 1062 000100
+d 1064 177564
+d 1066 000001
+
+echo Drop priority and loop, then interupted from the loop
+echo 1 is "Wait for Interupt" On RTI then branch back to Wait.
+d 1070 000771
+d 1072 240
+d 1074 0
+
+echo Console output routine then RTI
+echo Turn off interupt mode or it will keep printing the same character
+d 3000 012737
+d 3002 000001
+d 3004 177564
+d 3006 240
+
+echo Send the Character from R0 to the Print buffer, then RTI
+d 3010 110137
+d 3012 177566
+d 3014 000002
+
+echo Message: "Hi there!" Each word contains 2 x ASCII characters.
+d 4000 064510
+d 4002 072040
+d 4004 062550
+d 4006 062562
+d 4010 006441
+d 4012 000000
+
+g 1000
+
+
