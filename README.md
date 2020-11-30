@@ -72,9 +72,17 @@ HALT instruction, PC: 001040 (HALT)
 
 ## Interrupt Driven Routines.
 
-PDP11 code may be enhanced from using looping routines to test if devices are ready to send/receive data, to using *interrupt driven routines*. To demonstrate this a program will wait for a key to be typed on the console keyboard. When it's typed the keyboard interrupt is triggered and then code is executed to immediately handle retrieving a character from the keyboard buffer.  
+PDP11 code may be enhanced from using looping routines to test if devices are ready to send/receive data, to using *interrupt driven routines*. 
 
-For these programs the starting address of 1000 has been selected. Thus program script files contain g for go and 1000 to start at address 1000
+## Simple Console Keyboard routine.
+
+This section explains the following files:
+* interrupt-overview-keyboard-1
+* interrupt-overview-keyboard-2
+
+To demonstrate *interrupt driven routines* a program will wait for a key to be typed on the console keyboard. When it's typed the keyboard interrupt is triggered and then code is executed to immediately handle retrieving a character from the keyboard buffer.  
+
+For these programs the starting address of 1000 has been selected. Thus program script files contain g for go and 1000 to start at address 1000:
 ```
 g 1000
 ```
@@ -85,7 +93,6 @@ MOV #1000, R6
 012706
 001000
 ```
-
 The stack never uses address 1000. It works downwards, so the first entry on the stack will be 776, then 774, then 772, etc.
 
 The program needs to set the address and PSW to use for a routine to be executed when an interrupt occurs. For example addresses 60 and 62 are used for the keyboard of the console terminal. Into 60 is placed the address of 2000, where the keyboard input routine starts. Into 62 is placed the PSW that the keyboard routine will start execution at. In the case of the console keyboard, 200 is used so that it will set a priority of 4. Settings priority levels for the PSW is as follows: 7 = 340, 6 = 300, 5 = 240, 4 = 200, 3 = 140, 2 = 100, 1 = 40
@@ -100,7 +107,7 @@ MOV #200 (priority 4) be the future PSW at Address 62
 000200
 000062
 ```
-Then next part of the program that started at address 1000 is to set the priority in the PSW to be less that 4 so an interrupt from the keyboard is at a higher level and may occur. By default simh/pdp11 seems to start with the PSW at 340 which is priority 7.
+The next part of the program that started at address 1000 is to set the priority in the PSW to be less that 4 so an interrupt from the keyboard is at a higher level and may occur. By default simh/pdp11 seems to start with the PSW at 340 which is priority 7.
 ```
 MOV # 140 (priority 3) to PSW address of 177776
 012737
@@ -114,17 +121,20 @@ Mov #100 to Keyboard CSR 177560
 000100
 177560
 ```
-After this there needs to be a Wait for interrupt, where the program waits until someone types a key on the keyboard.
+After this there needs to be a WAIT for interrupt, where the program waits until someone types a key on the keyboard.
 ```
 WAIT for interrupt
 000001
+000000
 ```
 For the moment make the next instruction after the WAIT to be a HALT 000000.
+
+The keyboards interrupt routine will be written soon, in the meantime a HALT instruction will be placed at the start of the routine at address 2000.
 ```
 d 2000 000000
 ```
 
-Assuming address 2000 just contains a halt 000000 at the moment, then here is what happens when the code is run from address 1000.
+With address 2000 just contains a HALT, 000000, at the moment, then here is what happens when the code is run from address 1000:
 * Housekeeping is performed and everything is set as above
 * The program gets to the WAIT instruction and waits for a key on the console to be pressed. 
 * When the key is pressed the keyboard hardware interrupt occurs. 
@@ -133,13 +143,33 @@ Assuming address 2000 just contains a halt 000000 at the moment, then here is wh
 * The value of 2000 at interrupt vector address of 60 is loaded into the Program Counter (PC) 
 * The value of 200 (priority 4) at interrupt vector address of 62 is loaded in the PSW.
 
-The program then starts executing code at address 2000 and finds a HALT instruction. It halts and displays the updated PC of 2002. You can then examine the status of registers, etc. with commands like:
+To run this program enter...
+```
+$ rlwrap pdp11 interrupt-overview-keyboard-1
+```
+... the program starts at 1000 and then WAIT's for the Interrupt. Type a key on the keyboard. The interrupt is processed and then execution of code continues at address 2000 where a HALT instruction is found. It halts and displays the updated PC of 2002. You can then examine the status of registers, etc. with commands like:
 ```
 e PC
 e PSW
 e SP
 e 770:1000
 ```
+...which will provide output like this...
+```
+sim> e PC
+PC:	002002
+sim> e PSW
+PSW:	000200
+sim> e SP
+SP:	000774
+sim> e 770:1000
+770:	000000
+772:	000000
+774:	001036
+776:	000140
+1000:	012706
+```
+
 Now write some code at address 2000 to capture some info and return from the interrupt. E.g.
 ```
 MOV the contents of Keyboard buffer to Register 0
@@ -168,7 +198,12 @@ When the RTI occurs the Stack will be read and the address of the WAIT for inter
 
 The stack will continue to contain the address of the RTI + 2 and the PSW with a priority of 4, however the Stack Pointer will move back to 1000.
 
-The code total code is as follows:
+To run this program enter...
+```
+$ rlwrap pdp11 interrupt-overview-keyboard-2
+```
+
+The code total code of the program is as follows:
 ```
 echo MOV #1000 to the Stack Pointer.
 d 1000 012706
@@ -223,12 +258,10 @@ echo Start at address 1000
 g 1000
 ```
 
-The program is now run, starting at address 1000. Once a key has been typed
-
-... A Capital A was typed...
-
+The program is now run, starting at address 1000. It pauses waiting for a key to be typed. Once a key has been typed, for example a Capital A, which is 101 in octal, then the program halts with:
+```
 HALT instruction, PC: 001040 (HALT)
-
+```
 Now take a look around...
 ```
 sim> e R0
@@ -247,19 +280,25 @@ sim> e 770:1000 <-- After return from keyboard routine stack remains unchanged
 774:	001036
 776:	000140
 1000:	012706
-sim> e SP <-- However the Stack Pointer (SP) is now changed from 774 to 1000
-SP:	001000
-sim> e PSW <-- Have dropped from priority 4 to priority 3
-PSW:	000140
+sim> e SP 
+SP:	001000 <-- However the Stack Pointer (SP) has now changed from 774 to 1000
+sim> e PSW
+PSW:	000140 <-- Has dropped from priority 4 = 200, to priority 3 = 140
 sim> e PC
-PC:	001040 <-- Halted at the after the WAIT for interrupt.
+PC:	001040 <-- Halted at the address after the WAIT for interrupt.
 sim> 
 ```
 To perform the above run:
 ```
 $ rlwrap pdp11 interrupt-overview-keyboard
 ```
-To echo the keyboard keys typed, then (at this stage) it is done with a TSTB loop rather than an interrupt routine.
+
+## Simple Console Keyboard routine with display of characters on the console
+
+The following program is used:
+* interrupt-overview-keyboard-with-echo
+
+To echo the keyboard keys typed, then, at this stage, it will be done with a TSTB loop rather than an interrupt routine.
 
 The code above is enhanced as follows:
 ```
