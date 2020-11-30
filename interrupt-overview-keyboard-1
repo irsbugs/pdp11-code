@@ -1,0 +1,40 @@
+echo Interrupt Overiew - Keyboard 
+echo Setting CPU to 11/05...
+set cpu 11/05
+show cpu
+
+echo MOV #1000 to the Stack Pointer.
+d 1000 012706
+d 1002 001000 
+
+echo MOV #2000 to Address 60
+d 1004 012737
+d 1006 002000
+d 1010 000060
+
+echo MOV #200 (priority 4) be the future PSW at Address 62
+d 1012 012737
+d 1014 000200
+d 1016 000062
+
+MOV # 140 (priority 3) to PSW address of 177776
+d 1020 012737
+d 1022 000140
+d 1024 177776
+
+echo MOV #100 to Keyboard CSR 177560
+d 1026 012737
+d 1030 000100
+d 1032 177560
+
+echo WAIT for interupt.
+d 1034 000001
+
+echo HALT (for now) when returning from an interupt routine.
+d 1036 000000
+
+echo Keyboard interupt routine. Once a key has been typed. HALT
+d 2000 000000
+
+echo Start at address 1000
+g 1000

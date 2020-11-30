@@ -1,0 +1,57 @@
+echo Interrupt Overiew - Keyboard 
+echo Setting CPU to 11/05...
+set cpu 11/05
+show cpu
+
+echo MOV #1000 to the Stack Pointer.
+d 1000 012706
+d 1002 001000 
+
+echo MOV #2000 to Address 60
+d 1004 012737
+d 1006 002000
+d 1010 000060
+
+echo MOV #200 (priority 4) be the future PSW at Address 62
+d 1012 012737
+d 1014 000200
+d 1016 000062
+
+MOV # 140 (priority 3) to PSW address of 177776
+d 1020 012737
+d 1022 000140
+d 1024 177776
+
+echo MOV #100 to Keyboard CSR 177560
+d 1026 012737
+d 1030 000100
+d 1032 177560
+
+echo WAIT for interupt.
+d 1034 000001
+
+echo HALT (for now) when returning from an interupt routine.
+d 1036 000000
+
+echo Keyboard interupt routine. Once a key has been typed.
+echo MOV contents of address 177562 to R0
+d 2000 013700
+d 2002 177562
+
+echo Lets also get the current Stack contents into R1 and R2
+d 2004 013701
+d 2006 000776
+d 2010 013702
+d 2012 000774
+
+echo Lets see what the SP and PSW are set to: MOV R6 to R3 and MOV 177776 to R4
+d 2014 010603
+d 2016 013704
+d 2020 177776
+
+echo RTI this is to the HALT at address 1036. Just after the WAIT.
+d 2022 000002
+
+
+echo Start at address 1000
+g 1000
