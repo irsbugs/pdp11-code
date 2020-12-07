@@ -365,4 +365,30 @@ Objectives of this program are:
 * The next character in the message is retrieved and after turning interrupts back on a WAIT is performed until the device it "ready" for the next character and performs an interupt.
 * Each time a check is performed on R1 to see if it contains zero. When it does the program HALTs as the message has been completely sent to the console display.
 
+ ## Stop Watch
+ 
+A device interrupt driven Stop Watch. After initial setup the program encounters the one WAIT instruction in the program. Device interrupts may be performed by the KW11 clock, the console keyboard and the console display. After each device has completed its interrupt routine a RTI (Return from Interrupt) is performed to go back to the WAIT instruction. Please run the program:
+
+* stop-watch
+
+The console display will be like this...
+
+```
+$ rlwrap pdp11 stop-watch
+
+PDP-11 simulator V3.8-1
+Disabling CR
+Disabling XQ
+
+PDP11 Stop Watch.
+Enter key to toggle Start and Stop.
+Spacebar to Reset timer to zero.
+Escape key to HALT.
+
+ 00:07:15.9
+```
+
+
+ 
+ 
  
