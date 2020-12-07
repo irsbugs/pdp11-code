@@ -1,0 +1,636 @@
+; File stop-watch
+; Ian Stewart - December 2020 - Copyright CC0.
+;
+; Use 11/34 if MUL and DIV are required. 070rss and 071rss
+set cpu 11/05
+
+echo  
+echo PDP11 Stop Watch.
+echo Enter key to toggle Start and Stop. 
+echo Spacebar to Reset timer to zero.
+echo Escape key to HALT. 
+echo 
+ 
+; Displays hours, minutes, seconds and tenths of seconds as hh:mm:ss.t
+;
+; Operation:
+; The KW11A clock is set to 50Hz and interrupts through address 100 and 102.
+; The keyboard interupts through address 60 and 62 when a key is pressed.
+; Enter key toggles enable and disable of interrupts on KW11A Clock. 
+; Each clock interrupt increments the first of a set of the memory locations
+; from 700 to 714.
+; Address 700 counts to 4 then increments address 702 for the tenths of seconds.
+; Address 702 counts to 10 then increments address 704 for the seconds.
+; Address 704 counts to 60 then increments address 706 for the minutes.
+; Address 706 counts to 60 then increments address 710 for hours.
+; Address 710 counts to 24 then increments address 712 for days.
+;
+; Spacebar clears memory locations 700 to 720.
+; Every tenth of a second the memory locations are read and converted to binary
+; coded decimal. Colon and decimal point delimiters are added to the output stream.
+;
+; The console display is performed using interrupts through addresses 64 ad 66.
+;
+; Notes:
+; Max Days = 65535 = [177777] ~ 180 years 
+; 60 seconds is 74 in octal. 3600 is 7020 in octal 
+; Listing of machine code as macro obtained with sim> e -m <address>:<address> 
+; E.g.  e -m 1010:1012
+;       1010:	MOV #1000,SP
+
+; Change console from 7 bit to 8 bit to allow VT100 escape sequences.
+set tti 8b
+set tto 8b
+; Clock changed to fire at 50Hz
+set clk 50
+
+;show cpu
+;show console
+;show clk
+;show tti
+;show tto
+
+; ASCII stream. Display time on program launch as <Sp><Sp>00:00:00.0<CR><Null>
+d 0500 020040
+d 0502 030060
+d 0504 030072
+d 0506 035060
+d 0510 030060
+d 0512 030056
+d 0514 000015
+
+; Reserved for Stop Watch Status. Stop=-1 Start=1 Toggle using NEG instruction.
+; Launch program with Stop Watch stopped. i.e. 177777
+d 0716 177777
+
+;===== Start at 1000
+; Set stack pointer to 1000. However SP is not used.
+
+; Count of ticks at 50Hz from KW11 Module. 20 millisecs per pulse.
+; Address 177546 Vector 100 Priority 6. 
+; Bit 7 clock ready. Bit 6 set interupt enable. Bit 6 clear interrupt disabled. 
+
+; DEC OCT: 10 12, 50 62, 60 74, 100 144, 1000 1750, 10000 23420, 100000 303240; 
+; OCT DEC: 177777 65535, 77777 32767
+
+d 1000 240
+d 1002 240
+d 1004 240
+; CLR R0 Clear R0
+d 1006 005000
+
+; Setup SP to 1000.
+d 1010 012706
+d 1012 001000
+d 1014 240
+d 1016 240
+
+; Setup CLK Clock Interrupt Vector. Priority of 6. @2000
+d 1020 012737
+d 1022 002000
+d 1024 000100
+d 1026 012737
+
+d 1030 000300
+d 1032 000102
+d 1034 240
+d 1036 240
+
+; Setup TTI Keyboard Interrupt Vector. Priority of 4 @1400
+d 1040 012737
+d 1042 001400
+d 1044 000060
+d 1046 012737
+
+d 1050 000200
+d 1052 000062
+d 1054 240
+d 1056 240
+
+; Setup TTO Console Display Interrupt Vector. Priority of 4 @4000
+d 1060 012737
+d 1062 004000
+d 1064 000064
+d 1066 012737
+
+d 1070 000200
+d 1072 000066
+d 1074 240
+d 1076 240
+
+; Set PSW priority to 3.
+d 1100 012737
+d 1102 000140
+d 1104 177776
+d 1106 240
+
+; Enable Interrupt on Keyboard
+d 1110 012737
+d 1112 000100
+d 1114 177560
+
+; TTO Console display. Initially write the blank time. 00:00:00.0
+; MOV #500, R0 Pointer Address for start of ASCII stream.
+; Enable Interrupt on Console Display CSR. 
+; Null in ASCII stream turns off this interrupt.
+d 1116 012700
+
+d 1120 000500
+d 1122 012737
+d 1124 000100
+d 1126 177564
+
+; Wait for Interrupt. Fires every 20ms at 50Hz or 16.6ms at 60Hz.
+d 1130 000001
+; Return from Interrupt to here. Branch back to WAIT for next interrupt.
+d 1132 000776
+
+
+;===== Console keyboard interrupt routine. 
+; Uses R0. 
+; Use Esc key 033 to HALT program.
+; Enter key 012 or 015? to toggle Start and Stop +1 / -1 at @716.
+; Spacebar key 040 to Reset seconds counters to zero. 
+
+; Move keyboard character to R0 
+d 1400 113700
+d 1402 177562
+
+; If Esc 033 then HALT
+d 1404 020027
+d 1406 000033
+
+d 1410 001001
+d 1412 000000
+d 1414 240
+d 1416 240
+
+; Return is a 12 for LF. Strange? Sometimes Return is 15 for CR.
+d 1420 020027
+d 1422 000012
+; NEG @ 716. Toggle -1 177777 and +1 1 at @ 716
+d 1424 001002
+d 1426 005437
+
+d 1430 000716
+; Return is a 15 for CR. Strange? Initially 12 then 15?
+d 1432 020027
+d 1434 000015
+d 1436 001002
+
+d 1440 005437
+d 1442 000716
+d 1444 240
+d 1446 240
+
+; Reset is space. 
+;1450:	CMP R0,#40
+d 1450 020027
+d 1452 000040
+;1454:	BNE 1500
+d 1454 001011
+
+;Clears the counters @ 700 through 712
+;1456:	MOV #700,R1
+;1462:	CLR (R1)+
+;1464:	CMP R1,#714
+;1470:	BNE 1462
+d 1456 012701
+
+d 1460 000700
+d 1462 005021
+d 1464 022701
+d 1466 000714
+
+d 1470 001374
+d 1472 240
+d 1474 240
+d 1476 240
+
+; Check for Stop?
+d 1500 022737
+d 1502 177777
+d 1504 000716
+d 1506 001004
+
+; If Stop: Disable Interrupt on Clock
+d 1510 012737
+d 1512 000000
+d 1514 177546
+d 1516 000404
+
+; Else Start: Enable Interrupt on Clock
+d 1520 012737
+d 1522 000100
+d 1524 177546
+d 1526 240
+
+; RTI
+d 1530 000002
+
+
+;===== Clock Interrupt Routine
+; Inc clock counter at @700. 
+; cmp R0 with 60 / 74 octal. 60HZ = 74 = one second. If 50Hz = 62 = 1 sec.  
+; Counter Addresses:
+; 700 Tick count 0-4 [4] for 50Hz or 0-5 [5] for 60Hz
+; 702 1/10's of sec count 0-9 [11]
+; 704 Secs count 0-59 [61]
+; 706 Mins count 0-59 [61]
+; 710 Hours count 0-23 [27]
+; 712 Days count 0-65535 [177777]
+
+; Test Code. Load max values for locations 700 to 710 then test there is roll-over.
+
+d 1730 012737
+d 1732 4
+d 1734 700
+d 1736 240
+
+d 1740 012737
+d 1742 11
+d 1744 702
+d 1746 240
+
+d 1750 012737
+d 1752 61
+d 1754 704
+d 1756 240
+
+d 1760 012737
+d 1762 61
+d 1764 706
+d 1766 240
+
+d 1770 012737
+d 1772 27
+d 1774 710
+d 1776 240
+
+;===== Inc tick counter at @700. 50 [74] per second.
+d 2000 005237
+d 2002 000700
+;=== Compare the tick counter to reach 1/10 of second. 5 Ticks = 1/10th sec.
+d 2004 023727
+d 2006 000700
+
+d 2010 000004
+; If a tick with no roll-over then RTI. Else BGT to continue and update 1/10 secs.
+d 2012 003001
+d 2014 000002
+; Inc the 1/10 seconds counter
+d 2016 005237
+
+d 2020 000702
+; Clear the tick counter
+d 2022 005037
+d 2024 000700
+d 2026 240
+
+;=== Compare the 1/10 seconds counter for reaching a second.
+d 2030 023727
+d 2032 000702
+d 2034 000012
+; BLT to continue
+d 2036 002404
+
+; Inc the secs counter
+d 2040 005237
+d 2042 000704
+; Clear the 1/10 seconds counter
+d 2044 005037
+d 2046 000702
+
+;=== Compare the 1 seconds counter for reaching a minute.
+d 2050 023727
+d 2052 000704
+d 2054 000074
+; BLT to continue
+d 2056 002404
+
+; Inc the minutes counter
+d 2060 005237
+d 2062 000706
+; Clear the seconds counter
+d 2064 005037
+d 2066 000704
+
+;=== Compare the mins counter for reaching an hour.
+d 2070 023727
+d 2072 000706
+d 2074 000074
+; BLT to continue
+d 2076 002404
+
+; Inc the hours counter
+d 2100 005237
+d 2102 000710
+; Clear the mins counter
+d 2104 005037
+d 2106 000706
+
+;=== Compare the hours counter for reaching a day.
+d 2110 023727
+d 2112 000710
+d 2114 000030
+; BLT to continue
+d 2116 002404
+
+; Inc the days counter
+d 2120 005237
+d 2122 000712
+; Clear the hours counter
+d 2124 005037
+d 2126 000710
+
+; Something changed so refresh the time on the display. Jump to 3000
+d 2130 137
+d 2132 3000
+
+; Not executed. RTI comes later.
+d 2134 000002
+
+
+;===== Read the memory address with the timers counts @700 to @712
+; Convert to BCD and create ascii stream 00:00:00.0 commencing at @500.
+
+d 3000 240
+d 3002 240
+d 3004 240
+; Clear R0. The constants Index - Not used?
+d 3006 5200
+
+; Data block starts at @500. Store address pointer in R3
+d 3010 012703
+d 3012 000500
+d 3014 240
+d 3016 240
+
+; Place days counter @712 into R5
+;d 3020 013705
+;d 3022 0007121
+; MOVB #' .(R3)+ ; Set the first character to a space. 40 is space
+;d 3024 112723
+;d 3026 000040
+
+
+; TODO: Days. Reserved 3030 to 3076
+; Test
+d 3020 000137
+d 3022 003100
+d 3024 240
+d 3026 240
+
+;=== Hours 0 to 23 [27]
+; Place hours counter @710 into R5
+d 3100 013705
+d 3102 000710
+d 3104 240
+; 1$: CLR R0 ; Zero the constants index - Not Needed?
+d 3106 005000
+
+; Reserved for a prefix character. E.g. Space
+
+; Add a space to start the stream. 
+d 3110 112723
+d 3112 000040
+; Add another space so Cursor is one char left of time display.
+d 3114 112723
+d 3116 000040
+
+; $2 CLR R2 ; Clear the BCD number
+d 3120 005002
+; MOV #12, R1 ; Get the constant. 12 = 10's
+d 3122 012701
+d 3124 000012
+d 3126 240
+
+; $3 SUB R1, R5 ; Form this BCD digit. Branch at 2632 is back to here
+d 3130 160105
+; BLT $4 ; Branch if done
+d 3132 002402
+; INC R2 ; Increase the BCD Digit B??1. This is the count in decimal
+d 3134 005202
+; BR to 3$ ; should repeat for each digit to 2624?
+d 3136 000774
+
+; 4$ Add R1, R5 ; Add back the constant. R5 is the remainder units
+d 3140 060105
+; $6: BIS #'0, R2 ; Make the BCD Digit Ascii BIS = Bit Set OR (Br from 2650)
+d 3142 052702 
+d 3144 000060
+; 7$: BIS #'0 ,R2 ; Make it a zero if not already a digit
+d 3146 052702
+
+d 3150 000060
+; MOVB R2,(R3). ; Put this character in the output
+d 3152 110223 
+d 3154 240
+; $6: BIS #'0, R5 ; Make the BCD Digit Ascii BIS = Bit Set OR (Br from 2650)
+d 3156 052705
+
+d 3160 000060
+; 7$: BIS #'0 ,R2 ; Make it a zero if not already a digit
+d 3162 052705 
+d 3164 000060
+; MOVB R5,(R3). ; Put this character in the output
+d 3166 110523
+
+; MOVB #72,(R3). ; Add the colon seperator between hour and minute
+d 3170 112723
+d 3172 000072
+d 3174 240
+d 3176 240
+
+;=== Minutes 0 to 59 [73]
+; Place hours counter @706 into R5
+d 3200 013705
+d 3202 000706
+d 3204 240
+; 1$: CLR R0 ; Zero the constants index - Not Needed?
+d 3206 005000
+
+; Reserved for a prefix character. E.g. Space
+d 3210 240
+d 3212 240
+d 3214 240
+d 3216 240
+
+; $2 CLR R2 ; Clear the BCD number
+d 3220 005002
+; MOV #12, R1 ; Get the constant. 12 = 10's
+d 3222 012701
+d 3224 000012
+d 3226 240
+
+; $3 SUB R1, R5 ; Form this BCD digit. Branch at 2632 is back to here
+d 3230 160105
+; BLT $4 ; Branch if done
+d 3232 002402
+; INC R2 ; Increase the BCD Digit B??1. This is the count in decimal
+d 3234 005202
+; BR to 3$ ; should repeat for each digit to 2624?
+d 3236 000774
+
+; 4$ Add R1, R5 ; Add back the constant. R5 is the remainder units
+d 3240 060105
+; $6: BIS #'0, R2 ; Make the BCD Digit Ascii BIS = Bit Set OR (Br from 2650)
+d 3242 052702 
+d 3244 000060
+; 7$: BIS #'0 ,R2 ; Make it a zero if not already a digit
+d 3246 052702
+
+d 3250 000060
+; MOVB R2,(R3). ; Put this character in the output
+d 3252 110223 
+d 3254 240
+; $6: BIS #'0, R5 ; Make the BCD Digit Ascii BIS = Bit Set OR (Br from 2650)
+d 3256 052705
+
+d 3260 000060
+; 7$: BIS #'0 ,R2 ; Make it a zero if not already a digit
+d 3262 052705 
+d 3264 000060
+; MOVB R5,(R3). ; Put this character in the output
+d 3266 110523
+
+; MOVB #72,(R3). ; Add the colon seperator between minute and second
+d 3270 112723
+d 3272 000072
+d 3274 240
+d 3276 240
+
+;=== Seconds 0 to 59 [73]
+; Place hours counter @704 into R5
+d 3300 013705
+d 3302 000704
+d 3304 240
+; 1$: CLR R0 ; Zero the constants index - Not Needed?
+d 3306 005000
+
+; Reserved for a prefix character. E.g. Space
+d 3310 240
+d 3312 240
+d 3314 240
+d 3316 240
+
+; $2 CLR R2 ; Clear the BCD number
+d 3320 005002
+; MOV #12, R1 ; Get the constant. 12 = 10's
+d 3322 012701
+d 3324 000012
+d 3326 240
+
+; $3 SUB R1, R5 ; Form this BCD digit. Branch at 2632 is back to here
+d 3330 160105
+; BLT $4 ; Branch if done
+d 3332 002402
+; INC R2 ; Increase the BCD Digit B??1. This is the count in decimal
+d 3334 005202
+; BR to 3$ ; should repeat for each digit to 2624?
+d 3336 000774
+
+; 4$ Add R1, R5 ; Add back the constant. R5 is the remainder units
+d 3340 060105
+; $6: BIS #'0, R2 ; Make the BCD Digit Ascii BIS = Bit Set OR (Br from 2650)
+d 3342 052702 
+d 3344 000060
+; 7$: BIS #'0 ,R2 ; Make it a zero if not already a digit
+d 3346 052702
+
+d 3350 000060
+; MOVB R2,(R3). ; Put this character in the output
+d 3352 110223 
+d 3354 240
+; $6: BIS #'0, R5 ; Make the BCD Digit Ascii BIS = Bit Set OR (Br from 2650)
+d 3356 052705
+
+d 3360 000060
+; 7$: BIS #'0 ,R2 ; Make it a zero if not already a digit
+d 3362 052705 
+d 3364 000060
+; MOVB R5,(R3). ; Put this character in the output
+d 3366 110523
+
+; MOVB #72,(R3). ; Add the decimal point seperator between second and 1/10 sec
+d 3370 112723
+d 3372 000056
+d 3374 240
+d 3376 240
+
+;=== 1/10's of seconds 0 to 9 [11]
+; Place hours counter @702 into R5
+d 3400 013705
+d 3402 000702
+d 3404 240
+; 1$: CLR R0 ; Zero the constants index - Not Needed?
+d 3406 005000
+
+; Reserved for a prefix character. E.g. Space
+d 3410 240
+d 3412 240
+d 3414 240
+d 3416 240
+
+; $6: BIS #'0, R5 ; Make the BCD Digit Ascii BIS = Bit Set OR (Br from 2650)
+d 3420 052705
+d 3422 000060
+; 7$: BIS #'0 ,R2 ; Make it a zero if not already a digit
+d 3424 052705 
+d 3426 000060
+
+; MOVB R5,(R3). ; Put this character in the output
+d 3430 110523
+; Add a CR so time is over-written on the same line.
+d 3432 112723
+d 3434 000015
+d 3436 240
+
+; Jump to the output display routine. 5000 for loop
+;d 3440 137
+;d 3442 5000
+
+d 3440 240
+d 3442 240
+d 3444 240
+d 3446 240
+
+; Prepare output interrupt routine before RTI
+; MOV #500, R0 Pointer Address for start of ASCII stream.
+d 3450 012700
+d 3452 000500
+; Turn on Display interrupt
+d 3454 012737
+d 3456 000100
+
+d 3460 177564
+; An interrupt will probably fire now before the RTI. Lose first character?
+d 3462 000002
+
+
+; ===== Print using interrupt routine. Vectors 64 and 66
+; Print ASCII stream starts at 500 and byte increments till a null is reached.
+d 4000 240
+d 4002 240
+d 4004 240
+d 4006 240
+
+; CMPB
+d 4010 122027
+d 4012 000000
+; BEQ
+d 4014 001403
+d 4016 111037
+
+d 4020 177566
+d 4022 000002
+; Reached a Null so turn off Clock interrupts. Then RTI
+d 4024 012737
+d 4026 000000
+
+d 4030 177564
+d 4032 000002
+
+
+; ===== Start Program at 1000
+go 1000
