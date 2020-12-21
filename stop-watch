@@ -243,28 +243,28 @@ d 1530 000002
 ; Test Code. Load max values for locations 700 to 710 then test there is roll-over.
 
 d 1730 012737
-d 1732 4
-d 1734 700
+d 1732 000004
+d 1734 000700
 d 1736 240
 
 d 1740 012737
-d 1742 11
-d 1744 702
+d 1742 000011
+d 1744 000702
 d 1746 240
 
 d 1750 012737
-d 1752 61
-d 1754 704
+d 1752 000061
+d 1754 000704
 d 1756 240
 
 d 1760 012737
-d 1762 61
-d 1764 706
+d 1762 000061
+d 1764 000706
 d 1766 240
 
 d 1770 012737
-d 1772 27
-d 1774 710
+d 1772 000027
+d 1774 000710
 d 1776 240
 
 ;===== Inc tick counter at @700. 50 [74] per second.
@@ -624,7 +624,7 @@ d 4016 111037
 
 d 4020 177566
 d 4022 000002
-; Reached a Null so turn off Clock interrupts. Then RTI
+; Reached a Null so turn off interrupts for output to console. Then RTI
 d 4024 012737
 d 4026 000000
 
